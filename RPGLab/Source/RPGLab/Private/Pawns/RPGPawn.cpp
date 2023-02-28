@@ -6,6 +6,8 @@
 #include "Components/InputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
 
 // Sets default values
 ARPGPawn::ARPGPawn()
@@ -13,11 +15,17 @@ ARPGPawn::ARPGPawn()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	SkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh Component"));
-	SetRootComponent(SkeletalMeshComponent);
-
 	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsule"));
-	Capsule->SetupAttachment(GetRootComponent());
+	SetRootComponent(Capsule);
+
+	SkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh Component"));
+	SkeletalMeshComponent->SetupAttachment(GetRootComponent());
+
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	SpringArm->SetupAttachment(GetRootComponent());
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera Component"));
+	Camera->SetupAttachment(SpringArm);
 
 }
 
@@ -48,6 +56,17 @@ void ARPGPawn::Move(const FInputActionValue& Value)
 	}
 }
 
+void ARPGPawn::Look(const FInputActionValue& Value)
+{
+	FVector2D AxisValue = Value.Get<FVector2D>();
+
+	if (GetController())
+	{
+		AddControllerPitchInput(AxisValue.Y);
+		AddControllerYawInput(AxisValue.X);
+	}
+}
+
 // Called every frame
 void ARPGPawn::Tick(float DeltaTime)
 {
@@ -63,6 +82,7 @@ void ARPGPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ARPGPawn::Move);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARPGPawn::Look);
 	}
 
 }

@@ -8,6 +8,8 @@
 class UCapsuleComponent;
 class UInputMappingContext;
 class UInputAction;
+class USpringArmComponent;
+class UCameraComponent;
 
 UCLASS()
 class RPGLAB_API ARPGPawn : public APawn
@@ -26,8 +28,12 @@ protected:
 	UInputMappingContext* InputMappingContext;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* MoveAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* LookAction;
 
 	void Move(const FInputActionValue& Value);
+
+	void Look(const FInputActionValue& Value);
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -35,5 +41,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UCapsuleComponent* Capsule;
-	
+
+	UPROPERTY(VisibleAnywhere)
+	USpringArmComponent* SpringArm;
+
+	UPROPERTY(VisibleAnywhere)
+	UCameraComponent* Camera;
 };
