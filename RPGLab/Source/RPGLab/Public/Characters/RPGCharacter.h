@@ -10,6 +10,7 @@ class UInputMappingContext;
 class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
+class AItem;
 
 UCLASS()
 class RPGLAB_API ARPGCharacter : public ACharacter
@@ -36,14 +37,17 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 
+
+
 private:
 
 	UPROPERTY(VisibleAnywhere)
-		USpringArmComponent* SpringArm;
-
+	USpringArmComponent* SpringArm;
 	UPROPERTY(VisibleAnywhere)
-		UCameraComponent* Camera;
+	UCameraComponent* Camera;
+	AItem* OverlappingItem;
 
 public:	
+	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
 };

@@ -8,6 +8,7 @@
 #include "Components/InputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Items/Item.h"
 
 // Sets default values
 ARPGCharacter::ARPGCharacter()
