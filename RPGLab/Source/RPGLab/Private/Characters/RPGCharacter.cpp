@@ -2,6 +2,7 @@
 
 
 #include "Characters/RPGCharacter.h"
+#include "Items/Weapon.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 
@@ -36,6 +37,8 @@ void ARPGCharacter::BeginPlay()
 			Subsystem->AddMappingContext(InputMappingContext, 0);
 		}
 	}
+
+	EquippedWeapon->AttachMeshToSocket(GetMesh(), "SpineWeaponSocket");
 	
 }
 
@@ -60,6 +63,32 @@ void ARPGCharacter::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookVector.X);
 }
 
+void ARPGCharacter::EKeyPressed()
+{
+	if (EquippedWeapon)
+	{
+		if (CanArm())
+		{
+			EquippedWeapon->Equip(GetMesh(), "RightHandSocket", GetOwner(), GetInstigator());
+		}
+		else if (CanDisArm())
+		{
+
+		}
+		
+	}
+}
+
+bool ARPGCharacter::CanArm()
+{
+	return ActionState == EActionState::EAS_Idle && WeaponState == EWeaponState::ECS_UnEquipped && EquippedWeapon;
+}
+
+bool ARPGCharacter::CanDisArm()
+{
+	return ActionState == EActionState::EAS_Idle && WeaponState == EWeaponState::ECS_EquippedOneHandedWeapon && EquippedWeapon;
+}
+
 // Called every frame
 void ARPGCharacter::Tick(float DeltaTime)
 {
@@ -77,6 +106,7 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(EKeyPressedAction, ETriggerEvent::Triggered, this, &ARPGCharacter::EKeyPressed);
 	}
 
 }

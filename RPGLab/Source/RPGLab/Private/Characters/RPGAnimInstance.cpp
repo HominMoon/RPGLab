@@ -25,5 +25,6 @@ void URPGAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(RPGCharacterMovementComponent->Velocity);
 		IsFalling = RPGCharacterMovementComponent->IsFalling();
+		WeaponState = RPGCharacter->GetWeaponState();
 	}
 }
