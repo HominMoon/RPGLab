@@ -42,15 +42,28 @@ protected:
 	UInputAction* JumpAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* EKeyPressedAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* AttackAction;
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void EKeyPressed();
+	void Attack();
 
-	UFUNCTION(BlueprintCallable)
 	bool CanArm();
-	UFUNCTION(BlueprintCallable)
 	bool CanDisArm();
+	bool CanAttack();
+	UFUNCTION(BlueprintCallable)
+	void Arm();
+	UFUNCTION(BlueprintCallable)
+	void DisArm();
+	UFUNCTION(BlueprintCallable)
+	void EndEquip();
+	UFUNCTION(BlueprintCallable)
+	void EndAttack();
+
+	void PlayEquipMontage(FName SectionName);
+	void PlayAttackMontage();
 
 private:
 
@@ -61,6 +74,11 @@ private:
 	AItem* OverlappingItem;
 	UPROPERTY(EditAnywhere)
 	AWeapon* EquippedWeapon;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* AttackMontage;
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* EquipMontage;
 
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }

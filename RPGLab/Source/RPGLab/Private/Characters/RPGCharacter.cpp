@@ -1,10 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+#pragma once
 
 #include "Characters/RPGCharacter.h"
 #include "Items/Weapon.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 
 #include "Components/InputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -44,6 +45,7 @@ void ARPGCharacter::BeginPlay()
 
 void ARPGCharacter::Move(const FInputActionValue& Value)
 {
+	if (ActionState == EActionState::EAS_Attacking || ActionState == EActionState::EAS_Equipping) { return; }
 	FVector2D MoveVector = Value.Get<FVector2D>();
 
 	const FRotator ControlRotation = GetControlRotation();
@@ -69,24 +71,84 @@ void ARPGCharacter::EKeyPressed()
 	{
 		if (CanArm())
 		{
-			EquippedWeapon->Equip(GetMesh(), "RightHandSocket", GetOwner(), GetInstigator());
+			PlayEquipMontage("Equip");
+			WeaponState = EWeaponState::ECS_EquippedOneHandedWeapon;
+			ActionState = EActionState::EAS_Equipping;
 		}
 		else if (CanDisArm())
 		{
-
+			PlayEquipMontage("UnEquip");
+			WeaponState = EWeaponState::ECS_UnEquipped;
+			ActionState = EActionState::EAS_Equipping;
 		}
-		
+	}
+}
+
+void ARPGCharacter::Attack()
+{
+	if (CanAttack())
+	{
+		PlayAttackMontage();
+		ActionState = EActionState::EAS_Attacking;
 	}
 }
 
 bool ARPGCharacter::CanArm()
 {
-	return ActionState == EActionState::EAS_Idle && WeaponState == EWeaponState::ECS_UnEquipped && EquippedWeapon;
+	return ActionState == EActionState::EAS_Idle && WeaponState == EWeaponState::ECS_UnEquipped;
 }
 
 bool ARPGCharacter::CanDisArm()
 {
-	return ActionState == EActionState::EAS_Idle && WeaponState == EWeaponState::ECS_EquippedOneHandedWeapon && EquippedWeapon;
+	return ActionState == EActionState::EAS_Idle && WeaponState == EWeaponState::ECS_EquippedOneHandedWeapon;
+}
+
+bool ARPGCharacter::CanAttack()
+{
+	return WeaponState == EWeaponState::ECS_EquippedOneHandedWeapon && ActionState == EActionState::EAS_Idle;
+}
+
+void ARPGCharacter::Arm()
+{
+	EquippedWeapon->AttachMeshToSocket(GetMesh(), "RightHandSocket");
+}
+
+void ARPGCharacter::DisArm()
+{
+	EquippedWeapon->AttachMeshToSocket(GetMesh(), "SpineWeaponSocket");
+}
+
+void ARPGCharacter::EndEquip()
+{
+	ActionState = EActionState::EAS_Idle;
+}
+
+void ARPGCharacter::EndAttack()
+{
+	ActionState = EActionState::EAS_Idle;
+}
+
+void ARPGCharacter::PlayEquipMontage(FName SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && EquipMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT(" !!"));
+		AnimInstance->Montage_Play(EquipMontage);
+		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
+	}
+}
+
+void ARPGCharacter::PlayAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && EquipMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT(" !!"));
+		AnimInstance->Montage_Play(AttackMontage);
+	}
 }
 
 // Called every frame
@@ -107,7 +169,7 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(EKeyPressedAction, ETriggerEvent::Triggered, this, &ARPGCharacter::EKeyPressed);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Attack);
 	}
-
 }
 
