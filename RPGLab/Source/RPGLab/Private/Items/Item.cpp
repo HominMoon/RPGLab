@@ -6,11 +6,10 @@ AItem::AItem()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere Component"));
-	SetRootComponent(SphereComponent);
-
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
-	ItemMesh->SetupAttachment(GetRootComponent());
+	SetRootComponent(ItemMesh);
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere Component"));
+	SphereComponent->SetupAttachment(GetRootComponent());
 }
 
 void AItem::BeginPlay()

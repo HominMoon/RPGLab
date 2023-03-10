@@ -8,13 +8,13 @@ AWeapon::AWeapon()
 	BoxComponent->SetupAttachment(GetRootComponent());
 	BoxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BoxComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
-	BoxTraceStart = CreateDefaultSubobject<UBoxComponent>(TEXT("Box Trace Start"));
-	BoxTraceStart->SetupAttachment(BoxComponent);
+	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
+	BoxTraceStart->SetupAttachment(GetRootComponent());
 
-	BoxTraceEnd = CreateDefaultSubobject<UBoxComponent>(TEXT("Box Trace End"));
-	BoxTraceEnd->SetupAttachment(BoxComponent);
+	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
+	BoxTraceEnd->SetupAttachment(GetRootComponent());
 }
 
 void AWeapon::BeginPlay()
@@ -33,7 +33,8 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherAct
 
 	FHitResult HitResult;
 
-	UKismetSystemLibrary::BoxTraceSingle(this,
+	UKismetSystemLibrary::BoxTraceSingle(
+		this,
 		Start, End, FVector(5.f, 5.f, 5.f),
 		BoxComponent->GetComponentRotation(),
 		TraceTypeQuery1,
@@ -44,9 +45,12 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherAct
 		true
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("!!!"));
+	UKismetSystemLibrary::DrawDebugSphere(this, HitResult.ImpactPoint, 20.f, 12, FColor::Red, 5.f, 1.f);
+
+	UE_LOG(LogTemp, Warning, TEXT("!!!!!"));
 
 }
+
 
 void AWeapon::Equip(USceneComponent* Inparent, const FName& InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {

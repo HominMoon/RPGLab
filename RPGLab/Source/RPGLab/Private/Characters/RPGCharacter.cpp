@@ -4,6 +4,7 @@
 #include "Items/Weapon.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 
@@ -149,6 +150,12 @@ void ARPGCharacter::PlayAttackMontage()
 		UE_LOG(LogTemp, Warning, TEXT(" !!"));
 		AnimInstance->Montage_Play(AttackMontage);
 	}
+}
+
+void ARPGCharacter::SetBoxCollisionEnabled(ECollisionEnabled::Type CollsionType)
+{
+	EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollsionType);
+	EquippedWeapon->IgnoreActor.Empty();
 }
 
 // Called every frame

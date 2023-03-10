@@ -65,6 +65,9 @@ protected:
 	void PlayEquipMontage(FName SectionName);
 	void PlayAttackMontage();
 
+	UFUNCTION(BlueprintCallable)
+	void SetBoxCollisionEnabled(ECollisionEnabled::Type CollsionType);
+
 private:
 
 	UPROPERTY(VisibleAnywhere)
