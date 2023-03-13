@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Interfaces/HitInterface.h"
 #include "Enemy.generated.h"
 
 UCLASS()
-class RPGLAB_API AEnemy : public ACharacter
+class RPGLAB_API AEnemy : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
 
@@ -20,9 +21,6 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	UMeshComponent* EnemyMesh;
-	UPROPERTY(EditAnywhere)
-	UCapsuleComponent* Capsule;
 
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HitMontage;
@@ -33,5 +31,11 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	virtual void GetHit_Implementation(const FVector& Hitlocation) override;
+
+	void DirectionalHitReact(const FVector& Hitlocation);
+
+	void PlayHitReactMontage(const FName& SectionName);
 
 };

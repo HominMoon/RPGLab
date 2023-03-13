@@ -1,5 +1,6 @@
 #include "Items/Weapon.h"
 #include "Components/BoxComponent.h"
+#include "Interfaces/HitInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 AWeapon::AWeapon()
@@ -47,7 +48,15 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherAct
 
 	UKismetSystemLibrary::DrawDebugSphere(this, HitResult.ImpactPoint, 20.f, 12, FColor::Red, 5.f, 1.f);
 
-	UE_LOG(LogTemp, Warning, TEXT("!!!!!"));
+	if (HitResult.GetActor())
+	{
+		IHitInterface* HitInterface = Cast<IHitInterface>(HitResult.GetActor());
+
+		HitInterface->Execute_GetHit(HitResult.GetActor(), HitResult.ImpactPoint);
+	}
+
+	IgnoreActor.AddUnique(HitResult.GetActor());
+
 
 }
 
