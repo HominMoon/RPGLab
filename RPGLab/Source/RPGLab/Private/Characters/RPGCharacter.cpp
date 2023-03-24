@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Characters/RPGCharacter.h"
+
+#include "Characters/RPGCharacterMovement.h"
+
 #include "Items/Weapon.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -13,10 +16,8 @@
 #include "EnhancedInputComponent.h"
 #include "Items/Item.h"
 
-// Sets default values
-ARPGCharacter::ARPGCharacter()
+ARPGCharacter::ARPGCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<URPGCharacterMovement>(ACharacter::CharacterMovementComponentName))
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -27,7 +28,6 @@ ARPGCharacter::ARPGCharacter()
 
 }
 
-// Called when the game starts or when spawned
 void ARPGCharacter::BeginPlay()
 {
 	Super::BeginPlay();

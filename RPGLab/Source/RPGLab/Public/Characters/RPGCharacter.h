@@ -20,7 +20,7 @@ class RPGLAB_API ARPGCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	ARPGCharacter();
+	ARPGCharacter(const FObjectInitializer& ObjectInitializer);
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
