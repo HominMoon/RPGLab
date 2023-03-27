@@ -21,6 +21,7 @@ class RPGLAB_API ARPGCharacter : public ACharacter
 
 public:
 	ARPGCharacter(const FObjectInitializer& ObjectInitializer);
+
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -29,8 +30,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	EActionState ActionState = EActionState::EAS_Idle;
 
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE URPGCharacterMovement* GetCustomCharacterMovement() const { return MovementComponent; }
+
 protected:
 	virtual void BeginPlay() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
+	URPGCharacterMovement* MovementComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* InputMappingContext;
@@ -44,11 +51,17 @@ protected:
 	UInputAction* EKeyPressedAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* AttackAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* ClimbAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* CancelClimbAction;
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void EKeyPressed();
 	void Attack();
+	void Climb();
+	void CancelClimb();
 
 	bool CanArm();
 	bool CanDisArm();

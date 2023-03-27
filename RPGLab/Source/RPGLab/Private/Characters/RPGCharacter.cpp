@@ -16,9 +16,12 @@
 #include "EnhancedInputComponent.h"
 #include "Items/Item.h"
 
-ARPGCharacter::ARPGCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<URPGCharacterMovement>(ACharacter::CharacterMovementComponentName))
+ARPGCharacter::ARPGCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<URPGCharacterMovement>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	MovementComponent = Cast<URPGCharacterMovement>(GetCharacterMovement());
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
@@ -41,7 +44,7 @@ void ARPGCharacter::BeginPlay()
 	}
 
 	EquippedWeapon->AttachMeshToSocket(GetMesh(), "SpineWeaponSocket");
-	
+
 }
 
 void ARPGCharacter::Move(const FInputActionValue& Value)
@@ -49,11 +52,22 @@ void ARPGCharacter::Move(const FInputActionValue& Value)
 	if (ActionState == EActionState::EAS_Attacking || ActionState == EActionState::EAS_Equipping) { return; }
 	FVector2D MoveVector = Value.Get<FVector2D>();
 
-	const FRotator ControlRotation = GetControlRotation();
-	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+	FVector ForwardDirection;
+	FVector RightDirection;
 
-	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	if (MovementComponent->IsClimbing())
+	{
+		ForwardDirection = FVector::CrossProduct(MovementComponent->GetClimbSurfaceNormal(), -GetActorRightVector());
+		RightDirection = FVector::CrossProduct(MovementComponent->GetClimbSurfaceNormal(), GetActorUpVector());
+	}
+	else
+	{
+		const FRotator ControlRotation = GetControlRotation();
+		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+
+		ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	}
 
 	AddMovementInput(ForwardDirection, MoveVector.Y);
 	AddMovementInput(RightDirection, MoveVector.X);
@@ -92,6 +106,16 @@ void ARPGCharacter::Attack()
 		PlayAttackMontage();
 		ActionState = EActionState::EAS_Attacking;
 	}
+}
+
+void ARPGCharacter::Climb()
+{
+	MovementComponent->TryClimbing();
+}
+
+void ARPGCharacter::CancelClimb()
+{
+	MovementComponent->CancelClimbing();
 }
 
 bool ARPGCharacter::CanArm()
@@ -176,7 +200,8 @@ void ARPGCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(EKeyPressedAction, ETriggerEvent::Triggered, this, &ARPGCharacter::EKeyPressed);
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Attack);
+		EnhancedInputComponent->BindAction(ClimbAction, ETriggerEvent::Triggered, this, &ARPGCharacter::Climb);
+		EnhancedInputComponent->BindAction(CancelClimbAction, ETriggerEvent::Triggered, this, &ARPGCharacter::CancelClimb);
 	}
 }
 
