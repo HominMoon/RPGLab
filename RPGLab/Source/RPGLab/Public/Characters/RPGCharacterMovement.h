@@ -35,7 +35,9 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere)
-	class AWeapon* Weapon;
+	class AWeapon* IgnoredWeapon;
+	UPROPERTY(VisibleAnywhere)
+	class ARPGCharacter* RPGCharacter;
 
 private:
 	void SweepAndStoreWallHits();
@@ -47,15 +49,40 @@ private:
 	void PhysClimbing(float deltaTime, int32 Iterations);
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
+	void ComputeSurfaceInfo();
+	void ComputeClimbingVelocity(float deltaTime);
+	bool ShouldStopClimbing();
+	void StopClimbing(float deltaTime, int32 Iterations);
+	void MoveAlongClimbingSurface(float deltaTime);
+	void SnapToClimbingSurface(float deltaTime) const;
+	virtual float GetMaxSpeed() const override;
+	virtual float GetMaxAcceleration() const override;
+	FQuat GetClimbingRotation(float deltaTime) const;
+
 	UPROPERTY(EditAnywhere, Category = "Character Movement: Climbing")
 	int CollisionCapsuleRadius = 50;
 	UPROPERTY(EditAnywhere, Category = "Character Movement: Climbing")
 	int CollisionCapsuleHalfHeight = 72;
 	UPROPERTY(EditAnywhere, Category = "Character Movement: Climbing", meta = (ClampMin = "1.0", ClampMax = "75.0"))
 	float MinorHorizontalDegreesToStartClimbing = 25.f;
+	
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float MaxClimbingSpeed = 120.f;
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "10.0", ClampMax = "2000.0"))
+	float MaxClimbingAcceleration = 380.f;
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "0.0", ClampMax = "3000.0"))
+	float BrakingDecelerationClimbing = 550.f;
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "1.0", ClampMax = "12.0"))
+	int ClimbingRotationSpeed = 6;
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "0.0", ClampMax = "60.0"))
+	float ClimbingSnapSpeed = 4.f;
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "0.0", ClampMax = "80.0"))
+	float DistanceFromSurface = 45.f;
 
 	bool bWantsToClimb = false;
 	float ClimbingCollisionShrinkAmount = 30.f;
+	FVector CurrentClimbingNormal;
+	FVector CurrentClimbingPosition;
 
 	TArray<FHitResult> CurrentWallHits;
 

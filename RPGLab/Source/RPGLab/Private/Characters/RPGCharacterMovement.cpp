@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Characters/RPGCharacterMovement.h"
 #include "Characters/RPGCharacter.h"
 #include "Components/CapsuleComponent.h"
@@ -10,8 +9,10 @@ void URPGCharacterMovement::BeginPlay()
 {
 	Super::BeginPlay();
 
+	RPGCharacter = Cast<ARPGCharacter>(GetCharacterOwner());
+
 	ClimbQueryParams.AddIgnoredActor(GetOwner());
-	ClimbQueryParams.AddIgnoredActor(Weapon);
+	ClimbQueryParams.AddIgnoredActor(RPGCharacter->GetRPGWeapon());
 }
 
 void URPGCharacterMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -72,7 +73,7 @@ bool URPGCharacterMovement::CanStartClimbing()
 		const float HorizontalDegrees = FMath::RadiansToDegrees(FMath::Acos(HorizontalDot));
 		const bool bIsCeiling = FMath::IsNearlyZero(VerticalDot);
 
-		if (HorizontalDegrees <= MinorHorizontalDegreesToStartClimbing && !bIsCeiling && EyeHeightTrace(VerticalDot))
+		if (HorizontalDegrees <= MinorHorizontalDegreesToStartClimbing && !bIsCeiling && IsFacingSurface(VerticalDot))
 		{
 			return true;
 		}
@@ -87,13 +88,6 @@ bool URPGCharacterMovement::EyeHeightTrace(const float TraceDistance) const
 	const FVector Start = UpdatedComponent->GetComponentLocation() +
 		(UpdatedComponent->GetUpVector() * GetCharacterOwner()->BaseEyeHeight);
 	const FVector End = Start + (UpdatedComponent->GetForwardVector() * TraceDistance);
-	
-	DrawDebugLine(
-		GetWorld(),
-		Start,
-		End,
-		FColor::White
-		);
 
 	return GetWorld()->LineTraceSingleByChannel(
 		UpperEdgeHit,
@@ -134,6 +128,31 @@ void URPGCharacterMovement::PhysCustom(float deltaTime, int32 Iterations)
 
 void URPGCharacterMovement::PhysClimbing(float deltaTime, int32 Iterations)
 {
+	if (deltaTime < MIN_TICK_TIME)
+	{
+		return;
+	}
+
+	ComputeSurfaceInfo();
+
+	if (ShouldStopClimbing())
+	{
+		StopClimbing(deltaTime, Iterations);
+		return;
+	}
+
+	ComputeClimbingVelocity(deltaTime);
+
+	const FVector OldLocation = UpdatedComponent->GetComponentLocation();
+
+	MoveAlongClimbingSurface(deltaTime);
+
+	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		Velocity = (UpdatedComponent->GetComponentLocation() - OldLocation) / deltaTime;
+	}
+
+	SnapToClimbingSurface(deltaTime);
 }
 
 void URPGCharacterMovement::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
@@ -164,16 +183,112 @@ void URPGCharacterMovement::OnMovementModeChanged(EMovementMode PreviousMovement
 	}
 }
 
+void URPGCharacterMovement::ComputeSurfaceInfo()
+{
+	CurrentClimbingNormal = FVector::ZeroVector;
+	CurrentClimbingPosition = FVector::ZeroVector;
+
+	if (CurrentWallHits.IsEmpty())
+	{
+		return;
+	}
+
+	for (const FHitResult& WallHit : CurrentWallHits)
+	{
+		CurrentClimbingPosition += WallHit.ImpactPoint;
+		CurrentClimbingNormal += WallHit.Normal;
+	}
+
+	CurrentClimbingPosition /= CurrentWallHits.Num();
+	CurrentClimbingNormal = CurrentClimbingNormal.GetSafeNormal();
+}
+
+void URPGCharacterMovement::ComputeClimbingVelocity(float deltaTime)
+{
+	RestorePreAdditiveRootMotionVelocity();
+
+	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		constexpr float Friction = 0.0f;
+		constexpr bool bFluid = false;
+		CalcVelocity(deltaTime, Friction, bFluid, BrakingDecelerationClimbing);
+	}
+
+	ApplyRootMotionToVelocity(deltaTime);
+}
+
+bool URPGCharacterMovement::ShouldStopClimbing()
+{
+	const bool bIsOnCeiling = FVector::Parallel(CurrentClimbingNormal, FVector::UpVector);
+
+	return !bWantsToClimb || CurrentClimbingNormal.IsZero() || bIsOnCeiling;
+}
+
+void URPGCharacterMovement::StopClimbing(float deltaTime, int32 Iterations)
+{
+	bWantsToClimb = false;
+	SetMovementMode(EMovementMode::MOVE_Falling);
+	StartNewPhysics(deltaTime, Iterations);
+}
+
+void URPGCharacterMovement::MoveAlongClimbingSurface(float deltaTime)
+{
+	const FVector Adjusted = Velocity * deltaTime;
+
+	FHitResult Hit(1.f);
+
+	SafeMoveUpdatedComponent(Adjusted, GetClimbingRotation(deltaTime), true, Hit);
+
+	if (Hit.Time < 1.f)
+	{
+		HandleImpact(Hit, deltaTime, Adjusted);
+		SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+	}
+}
+
+void URPGCharacterMovement::SnapToClimbingSurface(float deltaTime) const
+{
+	const FVector Forward = UpdatedComponent->GetForwardVector();
+	const FVector Location = UpdatedComponent->GetComponentLocation();
+	const FQuat Rotation = UpdatedComponent->GetComponentQuat();
+
+	const FVector ForwardDifference = (CurrentClimbingPosition - Location).ProjectOnTo(Forward);
+	const FVector Offset = -CurrentClimbingNormal * (ForwardDifference.Length() - DistanceFromSurface);
+
+	constexpr bool bSweep = true;
+	UpdatedComponent->MoveComponent(Offset * ClimbingSnapSpeed * deltaTime, Rotation, bSweep);
+}
+
+float URPGCharacterMovement::GetMaxSpeed() const
+{
+	return IsClimbing() ? MaxClimbingSpeed : Super::GetMaxSpeed();
+}
+
+float URPGCharacterMovement::GetMaxAcceleration() const
+{
+	return IsClimbing() ? MaxClimbingAcceleration : Super::GetMaxAcceleration();
+}
+
+FQuat URPGCharacterMovement::GetClimbingRotation(float deltaTime) const
+{
+	const FQuat Current = UpdatedComponent->GetComponentQuat();
+	const FQuat Target = FRotationMatrix::MakeFromX(-CurrentClimbingNormal).ToQuat();
+
+	return FMath::QInterpTo(Current, Target, deltaTime, ClimbingRotationSpeed);
+}
+
 void URPGCharacterMovement::TryClimbing()
 {
 	if (CanStartClimbing())
 	{
 		bWantsToClimb = true;
+		UE_LOG(LogTemp, Warning, TEXT("C"));
 	}
 }
 void URPGCharacterMovement::CancelClimbing()
 {
 	bWantsToClimb = false;
+	UE_LOG(LogTemp, Warning, TEXT("CC"));
 }
 
 bool URPGCharacterMovement::IsClimbing() const
@@ -183,12 +298,14 @@ bool URPGCharacterMovement::IsClimbing() const
 
 FVector URPGCharacterMovement::GetClimbSurfaceNormal() const
 {
-	if (CurrentWallHits.Num() > 0)
+	/*if (CurrentWallHits.Num() > 0)
 	{
 		return CurrentWallHits[0].Normal;
 	}
 	else
 	{
 		return FVector::Zero();
-	}
+	}*/
+
+	return CurrentClimbingNormal;
 }

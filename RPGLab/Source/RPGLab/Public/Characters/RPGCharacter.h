@@ -102,4 +102,6 @@ public:
 	UFUNCTION()
 	FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }
 
+	FORCEINLINE AWeapon* GetRPGWeapon() { return EquippedWeapon; }
+
 };
