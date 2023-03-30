@@ -10,6 +10,7 @@ void URPGCharacterMovement::BeginPlay()
 	Super::BeginPlay();
 
 	RPGCharacter = Cast<ARPGCharacter>(GetCharacterOwner());
+	AnimInstance = GetCharacterOwner()->GetMesh()->GetAnimInstance();
 
 	ClimbQueryParams.AddIgnoredActor(GetOwner());
 	ClimbQueryParams.AddIgnoredActor(RPGCharacter->GetRPGWeapon());
@@ -85,8 +86,10 @@ bool URPGCharacterMovement::EyeHeightTrace(const float TraceDistance) const
 {
 	FHitResult UpperEdgeHit;
 
-	const FVector Start = UpdatedComponent->GetComponentLocation() +
-		(UpdatedComponent->GetUpVector() * GetCharacterOwner()->BaseEyeHeight);
+	const float BaseEyeHeight = GetCharacterOwner()->BaseEyeHeight;
+	const float EyeHeightOffset = IsClimbing() ? BaseEyeHeight + ClimbingCollisionShrinkAmount : BaseEyeHeight;
+
+	const FVector Start = UpdatedComponent->GetComponentLocation() + UpdatedComponent->GetUpVector() * EyeHeightOffset;
 	const FVector End = Start + (UpdatedComponent->GetForwardVector() * TraceDistance);
 
 	return GetWorld()->LineTraceSingleByChannel(
@@ -135,7 +138,7 @@ void URPGCharacterMovement::PhysClimbing(float deltaTime, int32 Iterations)
 
 	ComputeSurfaceInfo();
 
-	if (ShouldStopClimbing())
+	if (ShouldStopClimbing() || ClimbDownToFloor())
 	{
 		StopClimbing(deltaTime, Iterations);
 		return;
@@ -146,6 +149,8 @@ void URPGCharacterMovement::PhysClimbing(float deltaTime, int32 Iterations)
 	const FVector OldLocation = UpdatedComponent->GetComponentLocation();
 
 	MoveAlongClimbingSurface(deltaTime);
+
+	TryClimbUpLedge();
 
 	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 	{
@@ -274,7 +279,102 @@ FQuat URPGCharacterMovement::GetClimbingRotation(float deltaTime) const
 	const FQuat Current = UpdatedComponent->GetComponentQuat();
 	const FQuat Target = FRotationMatrix::MakeFromX(-CurrentClimbingNormal).ToQuat();
 
+	if (HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
+	{
+		return Current;
+	}
+
 	return FMath::QInterpTo(Current, Target, deltaTime, ClimbingRotationSpeed);
+}
+
+bool URPGCharacterMovement::ClimbDownToFloor() const
+{
+	FHitResult FloorHit;
+	if (!CheckFloor(FloorHit))
+	{
+		return false;
+	}
+	
+	const bool bOnWalkableFloor = FloorHit.Normal.Z > GetWalkableFloorZ();
+
+	const float DownSpeed = FVector::DotProduct(Velocity, -FloorHit.Normal);
+	const bool bIsMovingTowardsFloor = DownSpeed >= MaxClimbingSpeed / 3 && bOnWalkableFloor;
+
+	const bool bIsClimbingFloor = CurrentClimbingNormal.Z > GetWalkableFloorZ();
+
+	return bIsMovingTowardsFloor || (bIsClimbingFloor && bOnWalkableFloor);
+}
+
+bool URPGCharacterMovement::CheckFloor(FHitResult& FloorHit) const
+{
+	const FVector Start = UpdatedComponent->GetComponentLocation();
+	const FVector End = Start + FVector::DownVector * FloorCheckDistance;
+
+	return GetWorld()->LineTraceSingleByChannel(FloorHit, Start, End, ECC_WorldStatic, ClimbQueryParams);
+}
+
+bool URPGCharacterMovement::TryClimbUpLedge() const
+{
+	if (AnimInstance && LedgeClimbMontage && AnimInstance->Montage_IsPlaying(LedgeClimbMontage))
+	{
+		return false;
+	}
+
+	const float UpSpeed = FVector::DotProduct(Velocity, UpdatedComponent->GetUpVector());
+	const bool bIsMovingUp = UpSpeed >= MaxClimbingSpeed / 3;
+
+	if (bIsMovingUp && HasReachedEdge() && CanMoveToLedgeClimbLocation())
+	{
+		const FRotator StandRotation = FRotator(0, UpdatedComponent->GetComponentRotation().Yaw, 0);
+		UpdatedComponent->SetRelativeRotation(StandRotation);
+
+		AnimInstance->Montage_Play(LedgeClimbMontage);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool URPGCharacterMovement::HasReachedEdge() const
+{
+	const UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent();
+	const float TraceDistance = Capsule->GetUnscaledCapsuleRadius() * 2.5f;
+
+	return !EyeHeightTrace(TraceDistance);
+}
+
+bool URPGCharacterMovement::IsLocationWalkable(const FVector& CheckLocation) const
+{
+	const FVector CheckEnd = CheckLocation + (FVector::DownVector * 250.f);
+
+	FHitResult LedgeHit;
+	const bool bHitLedgeGround = GetWorld()->LineTraceSingleByChannel(LedgeHit, CheckLocation, CheckEnd,
+		ECC_WorldStatic, ClimbQueryParams);
+
+	return bHitLedgeGround && LedgeHit.Normal.Z >= GetWalkableFloorZ();
+}
+
+bool URPGCharacterMovement::CanMoveToLedgeClimbLocation() const
+{
+	const FVector VerticalOffset = FVector::UpVector * 160.f;
+	const FVector HorizontalOffset = UpdatedComponent->GetForwardVector() * 120.f;
+
+	const FVector CheckLocation = UpdatedComponent->GetComponentLocation() + HorizontalOffset + VerticalOffset;
+
+	if (!IsLocationWalkable(CheckLocation))
+	{
+		return false;
+	}
+
+	FHitResult CapsuleHit;
+	const FVector CapsuleStartCheck = CheckLocation - HorizontalOffset;
+	const UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent();
+
+	const bool bBlocked = GetWorld()->SweepSingleByChannel(CapsuleHit, CapsuleStartCheck, CheckLocation,
+		FQuat::Identity, ECC_WorldStatic, Capsule->GetCollisionShape(), ClimbQueryParams);
+
+	return !bBlocked;
 }
 
 void URPGCharacterMovement::TryClimbing()

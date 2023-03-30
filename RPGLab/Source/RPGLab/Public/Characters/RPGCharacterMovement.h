@@ -59,6 +59,19 @@ private:
 	virtual float GetMaxAcceleration() const override;
 	FQuat GetClimbingRotation(float deltaTime) const;
 
+	bool ClimbDownToFloor() const;
+	bool CheckFloor(FHitResult& FloorHit) const;
+	bool TryClimbUpLedge() const;
+	bool HasReachedEdge() const;
+	bool IsLocationWalkable(const FVector& CheckLocation) const;
+	bool CanMoveToLedgeClimbLocation() const;
+
+
+	UPROPERTY(Category = "Character Movement: Climbing", EditDefaultsOnly)
+	UAnimMontage* LedgeClimbMontage;
+	UPROPERTY()
+	UAnimInstance* AnimInstance;
+
 	UPROPERTY(EditAnywhere, Category = "Character Movement: Climbing")
 	int CollisionCapsuleRadius = 50;
 	UPROPERTY(EditAnywhere, Category = "Character Movement: Climbing")
@@ -78,6 +91,8 @@ private:
 	float ClimbingSnapSpeed = 4.f;
 	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "0.0", ClampMax = "80.0"))
 	float DistanceFromSurface = 45.f;
+	UPROPERTY(Category = "Character Movement: Climbing", EditAnywhere, meta = (ClampMin = "1.0", ClampMax = "500.0"))
+	float FloorCheckDistance = 100.f;
 
 	bool bWantsToClimb = false;
 	float ClimbingCollisionShrinkAmount = 30.f;
