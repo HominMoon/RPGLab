@@ -56,6 +56,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* CancelClimbAction;
 
+	UPROPERTY(EditAnywhere)
+	bool IsHangingC = false;
+
+	UFUNCTION(BlueprintCallable)
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void EKeyPressed();
