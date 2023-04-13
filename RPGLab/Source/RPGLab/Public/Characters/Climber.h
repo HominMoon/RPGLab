@@ -127,7 +127,8 @@ public:
 	bool bIsMovingRight = false;
 	UPROPERTY(BlueprintReadWrite)
 	bool bIsLedgeJumping = false;
-
+	UPROPERTY(BlueprintReadWrite)
 	bool WallChecked = false;
+	UPROPERTY(BlueprintReadWrite)
 	bool HeightChecked = false;
 };

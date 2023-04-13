@@ -191,8 +191,8 @@ void AClimber::LeftTracer()
 		this,
 		TraceValue,
 		TraceValue,
-		20.f,
-		60.f,
+		40.f,
+		80.f,
 		LedgeTraceType,
 		false,
 		ActorsToIgnore,
@@ -219,8 +219,8 @@ void AClimber::RightTracer()
 		this,
 		TraceValue,
 		TraceValue,
-		20.f,
-		60.f,
+		40.f,
+		80.f,
 		LedgeTraceType,
 		false,
 		ActorsToIgnore,
@@ -463,7 +463,7 @@ void AClimber::HipToLedge()
 	if (UKismetMathLibrary::InRange_FloatFloat(Range, -50.f, 0.f) && !bIsClimbingLedge && WallChecked && HeightChecked)
 	{
 		bCanGrab = true;
-		GrabLedge();
+		//GrabLedge();
 	}
 	else bCanGrab = false;
 }
