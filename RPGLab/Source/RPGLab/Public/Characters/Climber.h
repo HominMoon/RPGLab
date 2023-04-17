@@ -21,6 +21,7 @@ class RPGLAB_API AClimber : public ACharacter
 public:
 	AClimber();
 	virtual void Tick(float DeltaTime) override;
+	UFUNCTION(BlueprintCallable)
 	void HipToLedge();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -77,6 +78,10 @@ protected:
 
 private:
 
+	FHitResult FResult;
+	const FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+	FDetachmentTransformRules DetachmentRules = FDetachmentTransformRules(AttachmentRules, true);
+
 	UPROPERTY(VisibleAnywhere)
 		USpringArmComponent* SpringArm;
 	UPROPERTY(VisibleAnywhere)
@@ -107,7 +112,7 @@ private:
 	ETraceTypeQuery LedgeTraceType = UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel1);
 
 public:	
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	bool bIsHanging = false;
 	UPROPERTY(BlueprintReadWrite)
 	bool bIsClimbingLedge = false;

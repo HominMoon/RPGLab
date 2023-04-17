@@ -39,8 +39,6 @@ AClimber::AClimber()
 	LeftLedgeArrow->SetupAttachment(GetRootComponent());
 	RightLedgeArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("Right Ledge Arrow"));
 	RightLedgeArrow->SetupAttachment(GetRootComponent());
-
-
 }
 
 // Called when the game starts or when spawned
@@ -146,7 +144,7 @@ void AClimber::ForwardTracer()
 
 void AClimber::HeightTracer()
 {
-	FVector HeightTraceValue(FVector(0.f, 0.f, GetActorLocation().Z + 300.f));
+	FVector HeightTraceValue(FVector(0.f, 0.f, 100.f));
 	FVector ForwardTraceValue = GetActorForwardVector() * 70.f;
 	FVector End = GetActorLocation() + ForwardTraceValue;
 	FVector Start = End + HeightTraceValue;
@@ -170,6 +168,7 @@ void AClimber::HeightTracer()
 
 	if (HitResult.bBlockingHit)
 	{
+		FResult = HitResult;
 		HeightLocation = HitResult.ImpactPoint;
 		HeightChecked = true;
 	}
@@ -341,6 +340,7 @@ void AClimber::MoveInLedge()
 void AClimber::ExitLedge()
 {
 	bIsHanging = false;
+	FResult.Reset();
 	MovementComponent->SetMovementMode(EMovementMode::MOVE_Falling);
 }
 
@@ -377,6 +377,8 @@ void AClimber::GrabLedgeMoveToLocationFinished()
 {
 	UE_LOG(LogTemp, Warning, TEXT("!!"));
 	MovementComponent->StopMovementImmediately();
+
+	AttachToActor(FResult.GetActor(), AttachmentRules);
 }
 
 void AClimber::JumpSideLedge()
@@ -429,12 +431,13 @@ void AClimber::Tick(float DeltaTime)
 
 	ForwardTracer();
 	HeightTracer();
-	HipToLedge();
+	//HipToLedge();
 
 	if (CurrentPlayerController)
 	{
 		if (bIsHanging)
 		{
+
 			LeftTracer();
 			RightTracer();
 			MoveInLedge();
@@ -450,6 +453,10 @@ void AClimber::Tick(float DeltaTime)
 
 			if (CurrentPlayerController->WasInputKeyJustPressed(EKeys::S)) ExitLedge();
 		}
+		else
+		{
+			DetachFromActor(DetachmentRules);
+		}
 	}
 }
 
@@ -460,10 +467,10 @@ void AClimber::HipToLedge()
 
 	double Range = SpineLocationZ - HeightLocationZ;
 
-	if (UKismetMathLibrary::InRange_FloatFloat(Range, -50.f, 0.f) && !bIsClimbingLedge && WallChecked && HeightChecked)
+	if (UKismetMathLibrary::InRange_FloatFloat(Range, -70.f, 20.f) && !bIsClimbingLedge && WallChecked && HeightChecked)
 	{
 		bCanGrab = true;
-		//GrabLedge();
+		GrabLedge();
 	}
 	else bCanGrab = false;
 }
