@@ -341,6 +341,8 @@ void AClimber::ExitLedge()
 {
 	bIsHanging = false;
 	FResult.Reset();
+	FRotator NewRotation(FRotator(0.f, GetActorRotation().Yaw, GetActorRotation().Roll));
+	SetActorRotation(NewRotation);
 	MovementComponent->SetMovementMode(EMovementMode::MOVE_Falling);
 }
 
@@ -369,7 +371,7 @@ FVector AClimber::GrabLedgeMoveToLocation()
 
 FRotator AClimber::GrabLedgeMoveToRotation()
 {	
-	FRotator Rotation(FRotator(WallNormal.Rotation().Pitch, WallNormal.Rotation().Yaw - 180.f, WallNormal.Rotation().Roll));
+	FRotator Rotation(FRotator(-WallNormal.Rotation().Pitch, WallNormal.Rotation().Yaw - 180.f, WallNormal.Rotation().Roll));
 	return Rotation;
 }
 
@@ -451,11 +453,13 @@ void AClimber::Tick(float DeltaTime)
 			if (bCanJumpLeft || bCanJumpRight) bIsLedgeJumping = true;
 			else bIsLedgeJumping = false;
 
-			if (CurrentPlayerController->WasInputKeyJustPressed(EKeys::S)) ExitLedge();
+			//if (CurrentPlayerController->WasInputKeyJustPressed(EKeys::S)) ExitLedge();
 		}
 		else
 		{
 			DetachFromActor(DetachmentRules);
+			bIsMovingLeft = false;
+			bIsMovingRight = false;
 		}
 	}
 }

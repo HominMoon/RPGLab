@@ -44,6 +44,7 @@ void UClimberAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		IsMovingLeft_A = Climber->bIsMovingLeft;
 		IsMovingRight_A = Climber->bIsMovingRight;
 		IsLedgeJumping_A = Climber->bIsLedgeJumping;
+		IsTurnBack_A = Climber->bIsTurnBack;
 	}
 
 	

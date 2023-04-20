@@ -60,6 +60,7 @@ protected:
 	void GrabLedge();
 	UFUNCTION(BlueprintCallable)
 	void MoveInLedge();
+	UFUNCTION(BlueprintCallable)
 	void ExitLedge();
 
 	UFUNCTION(BlueprintCallable)
@@ -113,6 +114,9 @@ private:
 
 public:	
 	UPROPERTY(BlueprintReadWrite)
+	float fPressJumpTime = 0.f;
+
+	UPROPERTY(BlueprintReadWrite)
 	bool bIsHanging = false;
 	UPROPERTY(BlueprintReadWrite)
 	bool bIsClimbingLedge = false;
@@ -136,4 +140,8 @@ public:
 	bool WallChecked = false;
 	UPROPERTY(BlueprintReadWrite)
 	bool HeightChecked = false;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsTurnBack = false;
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsJumpHigh = false;
 };

@@ -47,6 +47,8 @@ public:
 	bool IsLedgeJumpLeft_A;
 	UPROPERTY(BlueprintReadOnly, Category = Movement)
 	bool IsLedgeJumpRight_A;
+	UPROPERTY(BlueprintReadOnly, Category = Movement)
+	bool IsTurnBack_A;
 
 	
 };
