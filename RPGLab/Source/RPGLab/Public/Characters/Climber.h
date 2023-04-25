@@ -73,6 +73,8 @@ protected:
 	void GrabLedgeMoveToLocationFinished();
 	UFUNCTION(BlueprintCallable)
 	void JumpSideLedge();
+	UFUNCTION(BlueprintCallable)
+	void Heal();
 
 	void PlayClimbMontage();
 	void PlayJumpSideLedgeMontage();
@@ -112,7 +114,14 @@ private:
 
 	ETraceTypeQuery LedgeTraceType = UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel1);
 
-public:	
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxHealth = 100.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = 0.f))
+	float Health = 100.f;
+	
+
 	UPROPERTY(BlueprintReadWrite)
 	float fPressJumpTime = 0.f;
 

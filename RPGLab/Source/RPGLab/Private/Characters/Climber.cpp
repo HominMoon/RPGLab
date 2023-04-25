@@ -401,6 +401,13 @@ void AClimber::JumpSideLedge()
 	UKismetSystemLibrary::Delay(this, 2.f, LatentInfo);
 }
 
+void AClimber::Heal()
+{
+	if (Health >= 10.f) return;
+
+	Health += 1.f;
+}
+
 void AClimber::PlayClimbMontage()
 {
 	UAnimInstance* Instance = GetMesh()->GetAnimInstance();
